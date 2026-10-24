@@ -1,0 +1,15 @@
+# Example circuit 2: 2-bit magnitude comparator, GT = 1 when A1A0 > B1B0.
+# Built the "textbook" way: compare the high bits, and if they are equal,
+# compare the low bits.
+INPUT(A1)
+INPUT(A0)
+INPUT(B1)
+INPUT(B0)
+OUTPUT(GT)
+
+nB1 = NOT(B1)
+nB0 = NOT(B0)
+hi  = AND(A1, nB1)       # A1 = 1, B1 = 0
+eq1 = XNOR(A1, B1)       # high bits equal
+lo  = AND(eq1, A0, nB0)  # high bits equal and A0 = 1, B0 = 0
+GT  = OR(hi, lo)
