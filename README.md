@@ -6,7 +6,7 @@ Team: Vinayak M., Ivan
 
 ## What this project does
 
-This is a Python program that takes a Boolean function (for example F = A'B + AC) and:
+This is a Python program that takes either a Boolean function (for example F = A'B + AC) or a digital logic circuit (a list of gates and the wires between them) and:
 
 - shows the canonical SOP and POS forms, and the same forms for the inverse F'
 
@@ -39,9 +39,12 @@ This is a Python program that takes a Boolean function (for example F = A'B + AC
 | cover.py | finds the essential primes and picks the cheapest set of primes (items 5, 6, 8) |
 | minimize.py | writes the minimized SOP/POS as text and counts the literals (items 5, 6) |
 | custom.py | our two custom commands: truth table export and hazard check (items 11, 12) |
+| circuit.py | reads a logic circuit file (.bench) and runs the same 12 commands on it |
 | verilog.py | writes the structural Verilog, a testbench and the board files |
 | check.py | tests the main program |
 | check_verilog.py | tests the Verilog that verilog.py makes |
+| check_circuit.py | tests the circuit input |
+| tests folder | example inputs for the demo: 2 functions (.eqn) and 3 circuits (.bench) |
 | seg7_mux.v | drives the 7-segment display on the board |
 | Nexys4DDR_Master.xdc | the course pin file, not changed (used in basic mode) |
 | Nexys4DDR_full.xdc | the same pin file with more pins turned on (used in full mode) |
@@ -50,9 +53,9 @@ This is a Python program that takes a Boolean function (for example F = A'B + AC
 
 ## How it works
 
-1. You give the program a function, either typed in or from a file.
+1. You give the program a function (typed in or from a file) or a circuit file.
 
-2. The program turns it into a truth table: a list with one 0 or 1 for every input combination. Every command after this works from that truth table, so it does not matter how the function was typed in.
+2. The program turns it into a truth table: a list with one 0 or 1 for every input combination. For a function, it works out the expression for every input combination. For a circuit, it puts the gates in order (each gate after the gates that feed it) and simulates the circuit for every input combination. Every command after this works from that truth table, so it does not matter which kind of input was used.
 
 3. The canonical forms come straight from the truth table. The rows where F = 1 give the SOP, and the rows where F = 0 give the POS.
 
@@ -119,6 +122,58 @@ python3 synth.py
 
 Then type, for example: expr F = A'B + AC, then msop, then quit.
 
+### Giving it a circuit
+
+A circuit is written in the .bench format, which is a standard format for gate-level circuits. Each line is one gate, and its inputs are the wires coming into it. For example, tests/mux.bench is a 2-to-1 multiplexer made only of NAND gates:
+
+INPUT(S)
+
+INPUT(A)
+
+INPUT(B)
+
+OUTPUT(F)
+
+Sn = NAND(S, S)
+
+n1 = NAND(A, Sn)
+
+n2 = NAND(B, S)
+
+F = NAND(n1, n2)
+
+The rules:
+
+- INPUT(name) and OUTPUT(name) list the inputs and outputs. The first INPUT is the most significant bit, like the first variable in F(A,B,C).
+
+- each gate line is: wire name = GATE(input wires). The gates you can use are AND, OR, NOT, NAND, NOR, XOR, XNOR and BUF.
+
+- the lines can be in any order, and a hash sign starts a comment
+
+- input and output names are a letter followed by letters or numbers (for example A, S, A1, Cin)
+
+- the program gives a clear error if a wire is never defined, a gate has the wrong number of inputs, or the circuit loops back on itself (then it is not combinational)
+
+Run all 12 commands on a circuit:
+
+python3 circuit.py tests/mux.bench -c all
+
+Or leave out -c all to type commands one at a time, the same as with synth.py. When it loads, it also prints the size of the circuit (for example: 3 inputs, 1 output, 4 gates, depth 3).
+
+If a circuit has more than one output, pick which one to look at with --output:
+
+python3 circuit.py tests/adder.bench --output Cout -c all
+
+### Example inputs for the demo
+
+| File | Type | What it shows |
+|---|---|---|
+| tests/example1.eqn | function | F(A,B,C,D) = m(0,2,5,7,8,10,13,15). 32 literals become just B'D' + BD. |
+| tests/hazard.eqn | function | F = A'B + AC + BC. msop removes the extra BC, and hazard shows BC is the term that stops the glitch. |
+| tests/mux.bench | circuit | 2-to-1 mux made of 4 NAND gates. Becomes S'A + SB, and has the classic mux hazard. |
+| tests/compare.bench | circuit | 2-bit comparator (is A1A0 bigger than B1B0?), 4 inputs and 6 gates |
+| tests/adder.bench | circuit | 1-bit full adder with 2 outputs, S and Cout. S is XOR, which cannot be made smaller. |
+
 ### List of commands
 
 | Command | Item | What it shows |
@@ -172,6 +227,14 @@ This makes the SOP circuit in full board mode and saves everything in a folder c
 For example:
 
 python3 verilog.py -e "F = A'B + AC" --form pos --mode basic --out out
+
+It works with files too, both functions and circuits:
+
+python3 verilog.py tests/hazard.eqn
+
+python3 verilog.py tests/compare.bench
+
+python3 verilog.py tests/adder.bench --output Cout
 
 The out folder will have:
 
@@ -281,11 +344,15 @@ python3 check.py
 
 python3 check_verilog.py
 
+python3 check_circuit.py
+
 - check.py checks the main program against answers worked out by hand. Then it makes 300 random functions and checks that every answer the program prints really means the same function.
 
 - check_verilog.py makes the Verilog for 48 functions (special cases like F = A, F = A + A' and F = AA', plus 40 random ones), as both SOP and POS. It simulates each one with its testbench. This one needs iverilog.
 
-Both should finish with ALL CHECKS PASSED.
+- check_circuit.py checks the example circuits against answers worked out by hand. Then it makes 300 random circuits and checks that each one gives the same truth table as the same logic written as an expression. It also checks that broken circuit files give a clear error message, and simulates the Verilog made from the example circuits.
+
+All three should finish with ALL CHECKS PASSED (or ALL VERILOG / ALL CIRCUIT CHECKS PASSED).
 
 ## Limits
 
@@ -295,8 +362,4 @@ Both should finish with ALL CHECKS PASSED.
 
 - Very long answers are cut short on screen. Use tt table.csv to save the full truth table.
 
-- Only one output function at a time.
-
-## Use of AI tools
-
-Following the course AI policy, parts of this project were AI-assisted. We used Claude (by Anthropic) to help write and debug some of the code. All design decisions were ours. We reviewed every AI-assisted part, tested it with check.py and check_verilog.py, and checked that it meets the assignment requirements. We understand how all of the code works and can explain it during the demo.
+- Only one output at a time. For a circuit with several outputs, pick one with --output.
