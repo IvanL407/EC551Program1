@@ -360,6 +360,8 @@ def main():
         python3 verilog.py -e "F = A'B + AC"                       SOP, full mode, out/
         python3 verilog.py -e "F = A'B + AC" --form pos --mode basic
         python3 verilog.py tests/example1.eqn --out build1
+        python3 verilog.py tests/mux.bench                         circuit (.bench) input
+        python3 verilog.py tests/adder.bench --output Cout
     """
     import argparse
     from inputs import parse_function, load_function_file
@@ -367,7 +369,8 @@ def main():
     from synth import Analysis
 
     ap = argparse.ArgumentParser(description="EC551: structural Verilog for the minimized function")
-    ap.add_argument("file", nargs="?", help="file containing a function")
+    ap.add_argument("file", nargs="?", help="function file, or a .bench circuit file")
+    ap.add_argument("--output", help="for a .bench circuit: which OUTPUT to build (default: first)")
     ap.add_argument("-e", "--expr", help="function given directly, e.g. \"F = A'B + AC\"")
     ap.add_argument("--form", choices=("sop", "pos"), default="sop", help="minimized form to build")
     ap.add_argument("--mode", choices=("full", "basic"), default="full",
@@ -378,7 +381,11 @@ def main():
         ap.error("give a file or -e \"<function>\"")
 
     try:
-        f = load_function_file(args.file) if args.file else parse_function(args.expr)
+        if args.file and args.file.lower().endswith(".bench"):
+            from circuit import load_circuit
+            f, _ = load_circuit(args.file, args.output)
+        else:
+            f = load_function_file(args.file) if args.file else parse_function(args.expr)
         a = Analysis(f)
         cover = a.cover_f if args.form == "sop" else a.cover_i
         text = sop_text(cover, f.names) if args.form == "sop" else pos_text(cover, f.names)
