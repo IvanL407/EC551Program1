@@ -296,3 +296,7 @@ Both should finish with ALL CHECKS PASSED.
 - Very long answers are cut short on screen. Use tt table.csv to save the full truth table.
 
 - Only one output function at a time.
+
+## Use of AI tools
+
+Following the course AI policy, parts of this project were AI-assisted. We used Claude (by Anthropic) to help write and debug some of the code. All design decisions were ours. We reviewed every AI-assisted part, tested it with check.py and check_verilog.py, and checked that it meets the assignment requirements. We understand how all of the code works and can explain it during the demo.
