@@ -40,7 +40,10 @@ Two board modes, both using the course's Nexys4DDR_Master.xdc port names (swt, l
 import os
 import shutil
 
-FPGA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fpga")
+# Board files (XDC, seg7_mux.v, tcl scripts) live in fpga/ if that folder exists,
+# otherwise right next to this file (flat repo layout).
+_HERE = os.path.dirname(os.path.abspath(__file__))
+FPGA_DIR = os.path.join(_HERE, "fpga") if os.path.isdir(os.path.join(_HERE, "fpga")) else _HERE
 BOARD_FILES = {
     "basic": ("Nexys4DDR_Master.xdc", "build.tcl", "program.tcl"),
     "full":  ("Nexys4DDR_full.xdc", "seg7_mux.v", "build.tcl", "program.tcl"),
@@ -322,6 +325,8 @@ def write_all(f, cover, form, expr_text, outdir, mode="full"):
     # Remove board files left over from the other mode, so Vivado never reads
     # two constraint files.
     other = {x for files in BOARD_FILES.values() for x in files} - set(BOARD_FILES[mode])
+    if os.path.abspath(outdir) == os.path.abspath(FPGA_DIR):
+        other = set()                  # never delete the repo's own copies of the board files
     for name in other:
         stale = os.path.join(outdir, name)
         if os.path.exists(stale):
@@ -342,7 +347,9 @@ def write_all(f, cover, form, expr_text, outdir, mode="full"):
         paths.append(p)
     for name in BOARD_FILES[mode]:
         dst = os.path.join(outdir, name)
-        shutil.copyfile(os.path.join(FPGA_DIR, name), dst)
+        src = os.path.join(FPGA_DIR, name)
+        if os.path.abspath(src) != os.path.abspath(dst):    # --out . in a flat layout
+            shutil.copyfile(src, dst)
         paths.append(dst)
     return paths, stats
 
