@@ -98,9 +98,9 @@ This is a Python program that takes either a Boolean function (for example F = A
 
 Variable names are one letter, with numbers after it if you want (A, B, x1, x2). For names with numbers, put \* between them, like x1\*x2. You can use up to 16 variables.
 
-You can also save the function in a text file, for example example.eqn, with one line in it:
+You can also save the function in a text file with one line in it, like the example files in the tests folder. For example, tests/example1.eqn contains:
 
-F(A,B,C) = A'B + AC
+F(A,B,C,D) = m(0,2,5,7,8,10,13,15)
 
 ### Running the program
 
@@ -114,7 +114,7 @@ python3 synth.py -e "F = A'B + AC" -c msop -c mpos -c pi
 
 Use a file instead of typing the function:
 
-python3 synth.py example.eqn -c all
+python3 synth.py tests/example1.eqn -c all
 
 Or start the program with no commands, and then type commands one at a time:
 
