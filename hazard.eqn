@@ -1,4 +1,0 @@
-# Example Boolean function 2: has a redundant term (BC is the consensus of A'B and AC).
-# msop removes BC, and the hazard command shows that BC is exactly the term
-# needed to stop the glitch when A changes.
-F(A,B,C) = A'B + AC + BC
